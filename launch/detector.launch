@@ -1,0 +1,7 @@
+<launch>
+
+  <group ns="VehicleDetector">
+    <node pkg="VehicleDetector" name="sim" type="detector"/>
+  </group>
+
+</launch>

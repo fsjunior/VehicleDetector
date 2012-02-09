@@ -1,0 +1,7 @@
+<launch>
+
+  <group ns="stereo">
+    <node pkg="VehicleDetector" name="sim" type="detector"/>
+  </group>
+
+</launch>
