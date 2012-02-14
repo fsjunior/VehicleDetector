@@ -33,78 +33,56 @@ float sigmoid(float x)
 
 /* Classes */
 class VehicleFeatures {
+private:
+    float mid_dist;
 public:
     vector<cv::KeyPoint> keyPoints;
     cv::Mat descriptors;
     vector< float > rank;
+    cv::FlannBasedMatcher matcher;
 
-    void addFeature(cv::KeyPoint& keypoint, cv::Mat descriptor)
+    VehicleFeatures() : mid_dist(0)
     {
-        keyPoints.push_back(keypoint);
-        descriptors.push_back(descriptor);
-//        int worst = 0;
-//
-//        if (keyPoints.size() >= DYNAMIC_FEATURE_COUNT) {
-//            for (unsigned int i = 1; i < keyPoints.size(); i++)
-//                if (keyPoints[i].response < keyPoints[worst].response)
-//                    worst = i;
-//            keyPoints.erase(keyPoints.begin() + worst);
-//            keyPoints.insert(keyPoints.begin() + worst, keypoint);
-//            descriptors.col(worst) = descriptor;
-//        } else {
-//            descriptors.push_back(descriptor);
-//            keyPoints.push_back(keypoint);
-//        }
-
-
-    }
+    };
 
     void findPairs(cv::Mat& sceneDescriptors, vector<cv::DMatch>& pairs, vector<cv::DMatch>& negpairs)
     {
-        cv::FlannBasedMatcher matcher;
+
         //cv::BruteForceMatcher< cv::L2<float> > matcher;
-
         vector< cv::DMatch > matches;
-        float min_dist, max_dist, mid_dist;
-
+        float min_dist, max_dist, lmid_dist;
 
         matcher.match(descriptors, sceneDescriptors, matches);
 
         min_dist = max_dist = matches.begin()->distance;
-        mid_dist = 0.0;
+        lmid_dist = 0.0;
 
         for (vector<cv::DMatch>::iterator i = matches.begin(); i != matches.end(); i++) {
             if (i->distance < min_dist)
                 min_dist = i->distance;
             if (i->distance > max_dist)
                 max_dist = i->distance;
-            mid_dist += i->distance;
+            lmid_dist += i->distance;
 
         }
 
-        mid_dist = mid_dist / (float) matches.size();
+        lmid_dist = lmid_dist / (float) matches.size();
 
-        ROS_DEBUG("Min/Max/Mid dist: %f %f %f", min_dist, max_dist, mid_dist);
+        if (mid_dist == 0)
+            mid_dist = lmid_dist;
+        else
+            mid_dist = (mid_dist * 1.95 + lmid_dist * 0.05) / 2.;
+        ROS_DEBUG("mid_dist: %f; local_mid_dist %f", mid_dist, lmid_dist);
+        ROS_DEBUG("Min/Max dist: %f %f", min_dist, max_dist);
 
         for (vector<cv::DMatch>::iterator i = matches.begin(); i != matches.end(); i++) {
             rank[i->queryIdx] = sigmoid(rank[i->queryIdx] + -(i->distance - mid_dist)*2.0);
-            ROS_DEBUG("RANK: [%d]: %f", i->queryIdx, rank[i->queryIdx]);
+            //ROS_DEBUG("RANK: [%d]: %f", i->queryIdx, rank[i->queryIdx]);
             if (rank[i->queryIdx] >= 0.0)
                 pairs.push_back(*i);
             else
                 negpairs.push_back(*i);
         }
-
-        /*for(vector<cv::DMatch>::iterator i = matches.begin(); i != matches.end(); i++)
-            if(i->distance < min_dist)
-                min_dist = i->distance;
-
-
-        for(vector<cv::DMatch>::iterator i = matches.begin(); i != matches.end(); i++)
-            if(i->distance <= min_dist*1.5)
-                pairs.push_back(*i);
-            else
-                negpairs.push_back(*i);*/
     }
 };
 
@@ -116,7 +94,6 @@ class VehicleDetector {
     VehicleFeatures referenceCar;
 
 
-    VehicleFeatures dynamicReferences;
 
     cv::Ptr<cv::FeatureDetector> detector;
     cv::Ptr<cv::DescriptorExtractor> extractor;
@@ -165,21 +142,6 @@ public:
         }
     }
 
-    void addBestSceneKeyPoint(vector<cv::KeyPoint>& keypoints, cv::Mat& descriptors, vector<cv::DMatch>& matches)
-    {
-        int best = matches[0].queryIdx;
-
-        for (vector<cv::DMatch>::iterator i = matches.begin(); i != matches.end(); i++)
-            if (keypoints[i->queryIdx].response > keypoints[best].response)
-                best = i->queryIdx;
-
-        /*for (unsigned int i = 1; i < keypoints.size(); i++)
-            if (keypoints[i].response > keypoints[best].response)
-                best = i;*/
-
-        dynamicReferences.addFeature(keypoints[best], descriptors.row(best));
-    }
-
     void imageCb(const sensor_msgs::ImageConstPtr& msg)
     {
         cv_bridge::CvImagePtr cv_ptr;
@@ -199,24 +161,16 @@ public:
         extractor->compute(cv_ptr->image, sceneKeypoints, sceneDescriptors);
 
         referenceCar.findPairs(sceneDescriptors, pairs, negpairs);
-        dynamicReferences.findPairs(sceneDescriptors, dyn_pairs, dyn_negpairs);
 
-        addBestSceneKeyPoint(sceneKeypoints, sceneDescriptors, pairs);
 
         drawKeyPoints(cv_ptr->image, pairs, sceneKeypoints, cv::Scalar(0, 255, 0), 2);
         drawKeyPoints(cv_ptr->image, negpairs, sceneKeypoints, cv::Scalar(0, 0, 255), 1);
-
-        drawKeyPoints(cv_ptr->image, dyn_pairs, sceneKeypoints, cv::Scalar(255, 0, 0), 2);
-        //drawKeyPoints(cv_ptr->image, negpairs, sceneKeypoints, cv::Scalar(0, 0, 255), 1);
-
-
 
 
         cv::imshow(WINDOW, cv_ptr->image);
 
 
         cv::waitKey(3);
-
     }
 
     bool loadReferenceCar()
