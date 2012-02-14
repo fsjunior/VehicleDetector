@@ -73,7 +73,7 @@ public:
         else
             mid_dist = (mid_dist * 1.95 + lmid_dist * 0.05) / 2.;
         ROS_DEBUG("mid_dist: %f; local_mid_dist %f", mid_dist, lmid_dist);
-        ROS_DEBUG("Min/Max dist: %f %f", min_dist, max_dist);
+        ROS_DEBUG("Min/Max dist: %f %f", min_dist, max_dist); 
 
         for (vector<cv::DMatch>::iterator i = matches.begin(); i != matches.end(); i++) {
             rank[i->queryIdx] = sigmoid(rank[i->queryIdx] + -(i->distance - mid_dist)*2.0);
