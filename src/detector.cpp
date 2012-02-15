@@ -10,8 +10,9 @@
 #include <iostream>
 #include <cmath>
 #include <algorithm>
+//#include <opencv2/flann/composite_index.h>
 
-namespace enc = sensor_msgs::image_encodings;
+//namespace enc = sensor_msgs::image_encodings;
 using std::vector;
 
 
@@ -41,7 +42,8 @@ public:
     vector< float > rank;
     cv::FlannBasedMatcher matcher;
 
-    VehicleFeatures() : mid_dist(0)
+
+    VehicleFeatures() : mid_dist(0.)//, matcher(new cv::flann::KDTreeIndexParams(4))
     {
     };
 
@@ -68,7 +70,7 @@ public:
 
         lmid_dist = lmid_dist / (float) matches.size();
 
-        if (mid_dist == 0)
+        if (mid_dist == 0.)
             mid_dist = lmid_dist;
         else
             mid_dist = (mid_dist * 1.95 + lmid_dist * 0.05) / 2.;
@@ -105,7 +107,7 @@ public:
     {
         image_sub_ = it_.subscribe("/stereo/left/image_rect_mono", 10, &VehicleDetector::imageCb, this);
 
-        detector = new cv::SurfFeatureDetector(400., 3, 4, true);
+        detector = new cv::SurfFeatureDetector(800., 5, 7, true);
         //detector = new cv::GoodFeaturesToTrackDetector();
         //detector = new cv::StarFeatureDetector();
 
