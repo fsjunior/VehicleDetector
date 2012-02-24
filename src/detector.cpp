@@ -8,7 +8,7 @@ using std::vector;
 
 
 static const char WINDOW[] = "Vehicle Detector";
-static const char REFERENCE_CAR[] = "images/carro.png";
+static const char REFERENCE_CAR[] = "/home/fsjunior/ros_workspace/VehicleDetector/images/carro.png";
 static const float KEYPOINTS_FACTOR = 0.3;
 static const unsigned int DYNAMIC_FEATURE_COUNT = 10;
 
@@ -128,7 +128,7 @@ void VehicleDetector::imageCb(const sensor_msgs::ImageConstPtr& msg)
 
 
     drawKeyPoints(cv_ptr->image, pairs, sceneKeypoints, cv::Scalar(0, 255, 0), 2);
-    drawKeyPoints(cv_ptr->image, negpairs, sceneKeypoints, cv::Scalar(0, 0, 255), 1);
+    //drawKeyPoints(cv_ptr->image, negpairs, sceneKeypoints, cv::Scalar(0, 0, 255), 1);
 
     pf.update(pairs, sceneKeypoints);
 
@@ -149,8 +149,7 @@ bool VehicleDetector::loadReferenceCar()
     referenceCarImage = cv::imread(REFERENCE_CAR, CV_LOAD_IMAGE_GRAYSCALE);
     if (referenceCarImage.data) {
         detector->detect(referenceCarImage, referenceCar.keyPoints);
-
-        ROS_INFO("Keypoints in object: %ld; Selecting the best %d", referenceCar.keyPoints.size(), (int) ((float) referenceCar.keyPoints.size() * KEYPOINTS_FACTOR));
+        ROS_INFO("Keypoints in object: %d; Selecting the best %d", (int)referenceCar.keyPoints.size(), (int) ((float) referenceCar.keyPoints.size() * KEYPOINTS_FACTOR));
         std::sort(referenceCar.keyPoints.begin(), referenceCar.keyPoints.end(), compKeyPoint);
         referenceCar.keyPoints.resize((int) ((float) referenceCar.keyPoints.size() * KEYPOINTS_FACTOR));
         referenceCar.rank.resize(referenceCar.keyPoints.size());
