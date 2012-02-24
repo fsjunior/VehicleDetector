@@ -29,4 +29,4 @@ set(LIBRARY_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/lib)
 #rosbuild_add_executable(example examples/example.cpp)
 #target_link_libraries(example ${PROJECT_NAME})
 
-rosbuild_add_executable(vehicle_detector src/detector.cpp)
+rosbuild_add_executable(vehicle_detector src/main.cpp src/detector.cpp src/particlefilter.cpp)
