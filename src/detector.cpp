@@ -2,13 +2,14 @@
 #include <ros/ros.h>
 #include <opencv2/highgui/highgui.hpp>
 #include <cv_bridge/cv_bridge.h>
+#include <opencv2/calib3d/calib3d.hpp>
 
 
 using std::vector;
 
 
 static const char WINDOW[] = "Vehicle Detector";
-static const char REFERENCE_CAR[] = "/home/fsjunior/ros_workspace/VehicleDetector/images/carro.png";
+static const char REFERENCE_CAR[] = "images/carro.png";
 static const float KEYPOINTS_FACTOR = 0.3;
 static const unsigned int DYNAMIC_FEATURE_COUNT = 10;
 
@@ -91,14 +92,33 @@ VehicleDetector::~VehicleDetector()
     cv::destroyWindow(WINDOW);
 }
 
-void VehicleDetector::drawKeyPoints(cv::Mat& image, vector<cv::DMatch>& matches, vector<cv::KeyPoint> &keypoints, const cv::Scalar& color, int thickness)
+void VehicleDetector::drawKeyPoints(cv::Mat& image, vector<cv::DMatch>& matches, vector<cv::KeyPoint> &keyPoints, const cv::Scalar& color, int thickness)
 {
     vector<cv::KeyPoint>::iterator k;
 
     for (vector<cv::DMatch>::iterator i = matches.begin(); i != matches.end(); i++) {
-        k = keypoints.begin() + i->trainIdx;
+        k = keyPoints.begin() + i->trainIdx;
         cv::circle(image, k->pt, k->size * 1.2 / 9. * 2, color, thickness);
     }
+}
+
+cv::Point2f VehicleDetector::getVehicleCentralPoint(vector<cv::DMatch>& matches, vector<cv::KeyPoint> &sceneKeyPoints)
+{
+    vector<cv::Point2f> src, dst;
+    vector<cv::Point2f> srcpt, dstpt;
+
+    for (vector<cv::DMatch>::iterator i = matches.begin(); i != matches.end(); i++) {
+        src.push_back(referenceCar.keyPoints[i->queryIdx].pt);
+        dst.push_back(sceneKeyPoints[i->trainIdx].pt);
+    }
+
+    cv::Mat h = cv::findHomography(src, dst, cv::RANSAC);
+
+    srcpt.push_back(cv::Point2f(96, 42.));
+
+    cv::perspectiveTransform(srcpt, dstpt, h);
+
+    return dstpt[0];
 }
 
 void VehicleDetector::imageCb(const sensor_msgs::ImageConstPtr& msg)
@@ -125,14 +145,20 @@ void VehicleDetector::imageCb(const sensor_msgs::ImageConstPtr& msg)
     extractor->compute(cv_ptr->image, sceneKeypoints, sceneDescriptors);
 
     referenceCar.findPairs(sceneDescriptors, pairs, negpairs);
-
+    try {
+        cv::Point2f p = getVehicleCentralPoint(pairs, sceneKeypoints);
+        ROS_INFO("%f %f", p.x, p.y);
+        cv::circle(cv_ptr->image, p, 2, cv::Scalar(0, 255, 255), 3);
+    } catch (cv::Exception e) {
+        //ROS_ERROR_STREAM(e.err);
+    }
 
     drawKeyPoints(cv_ptr->image, pairs, sceneKeypoints, cv::Scalar(0, 255, 0), 2);
-    //drawKeyPoints(cv_ptr->image, negpairs, sceneKeypoints, cv::Scalar(0, 0, 255), 1);
+    drawKeyPoints(cv_ptr->image, negpairs, sceneKeypoints, cv::Scalar(0, 0, 255), 1);
 
-    pf.update(pairs, sceneKeypoints);
+    //pf.update(pairs, sceneKeypoints);
 
-    pf.printParticles(cv_ptr->image);
+    //pf.printParticles(cv_ptr->image);
 
     cv::imshow(WINDOW, cv_ptr->image);
 

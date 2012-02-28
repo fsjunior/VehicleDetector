@@ -2,6 +2,9 @@
 
 #include "particlefilter.h"
 #include "numeric"
+#include <stdio.h>
+
+using namespace pf;
 
 /* Particle */
 Particle::Particle(const float _x, const float _y) : pt(_x, _y), rank(0.), acc_rank(0.)
@@ -56,12 +59,10 @@ Particle Particle::operator *(const Particle& b) const
     return Particle(pt.x * b.pt.x, pt.y * b.pt.y);
 }
 
-
-
 /*Particle Filter */
 Particle& ParticleFilter::searchByRank(const float rank)
 {
-    return *(std::lower_bound(particles->begin(), particles->end(), rank));
+    return *std::lower_bound(particles->begin(), particles->end(), rank);
 }
 
 ParticleFilter::ParticleFilter(const int _particles, const int _mx, const int _my, const float _max_std_dev)
@@ -94,28 +95,44 @@ void ParticleFilter::update(vector<cv::DMatch>& matches, vector<cv::KeyPoint> &k
     boost::uniform_real<float> max_rank(0., (particles->end() - 1)->acc_rank);
     boost::variate_generator< boost::mt19937&, boost::uniform_real<float> > rank_rand(rng, max_rank);
 
+
     new_particles = new vector<Particle>;
 
     Particle sum(0., 0.);
-    
+
     for (int i = 0; i < num_particles; i++) {
         float rand = rank_rand();
         Particle *p = &searchByRank(rand);
-        
+
         new_particles->push_back(*p);
         sum = sum + *p;
     }
 
     /* Calcula média e desvio padrão */
     //Particle sum = std::accumulate(new_particles->begin(), new_particles->end(), Particle());
-    mean.x = sum.pt.x / (float)num_particles;
-    mean.y = sum.pt.y / (float)num_particles;
+    mean.x = sum.pt.x / (float) num_particles;
+    mean.y = sum.pt.y / (float) num_particles;
 
     Particle sqsum = std::inner_product(new_particles->begin(), new_particles->end(), new_particles->begin(), Particle());
 
-    stddev = (std::sqrt(sqsum.pt.x / (float)num_particles - mean.x * mean.x) + std::sqrt(sqsum.pt.y / (float)num_particles - mean.y * mean.y)) / 2.;
+    stddev = (std::sqrt(sqsum.pt.x / (float) num_particles - mean.x * mean.x) + std::sqrt(sqsum.pt.y / (float) num_particles - mean.y * mean.y)) / 2.;
 
     particles = new_particles;
+}
+
+int ParticleFilter::getStatus()
+{
+    if (stddev < max_std_dev * 1.5)
+        return DETECTED;
+    else if (stddev > max_std_dev * 1.5 && stddev < max_std_dev * 2.)
+        return CAUTION;
+    else
+        return NOT_DETECTED;
+}
+
+cv::Point2f& ParticleFilter::getPoint()
+{
+    return mean;
 }
 
 void ParticleFilter::printParticles(cv::Mat& image)
@@ -124,13 +141,12 @@ void ParticleFilter::printParticles(cv::Mat& image)
         cv::circle(image, i->pt, 1, cv::Scalar(255, 0, 0), 1);
 
     cv::Scalar color;
-    
-    if(stddev < max_std_dev*1.5)
-        color = cv::Scalar(0, 255, 0);
-    else if (stddev > max_std_dev*1.5 && stddev < max_std_dev*2.)
-        color = cv::Scalar(0, 255, 255);
-    else
-        color = cv::Scalar(0, 0, 255);
+
+    switch (getStatus()) {
+        case DETECTED: color = cv::Scalar(0, 255, 0); break;
+        case CAUTION: color = cv::Scalar(0, 255, 255); break;
+        case NOT_DETECTED: color = cv::Scalar(0, 0, 255); break;
+    }
 
     cv::circle(image, mean, 2, color, 2);
     cv::circle(image, mean, stddev, color, 1);
@@ -139,7 +155,7 @@ void ParticleFilter::printParticles(cv::Mat& image)
     s << stddev;
     cv::Point2f p(mean);
     p.x += stddev;
-    
+
     cv::putText(image, s.str(), p, cv::FONT_HERSHEY_PLAIN, 1, color, 1, 8, false);
 }
 

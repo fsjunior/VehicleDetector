@@ -15,51 +15,63 @@
 
 using std::vector;
 
+namespace pf {
 
-class Particle {
-public:
-    cv::Point2f pt;
-    float rank;
-    float acc_rank;
 
-    Particle(const float _x = 0., const float _y = 0.);
-    Particle(const Particle &p);
+    enum {DETECTED, CAUTION, NOT_DETECTED};
+   
 
-    void addXY(const float _x, const float _y);
+    class Particle {
+    public:
+        cv::Point2f pt;
+        float rank;
+        float acc_rank;
 
-    void calcRank(vector<cv::DMatch>& matches, vector<cv::KeyPoint> &keypoints, vector<Particle>::iterator prev);
+        Particle(const float _x = 0., const float _y = 0.);
+        Particle(const Particle &p);
 
-    bool operator<(const float b_acc_rank) const;
+        void addXY(const float _x, const float _y);
 
-    Particle operator +(const Particle& b) const;
-    Particle operator *(const Particle& b) const;
+        void calcRank(vector<cv::DMatch>& matches, vector<cv::KeyPoint> &keypoints, vector<Particle>::iterator prev);
+
+        bool operator<(const float b_acc_rank) const;
+
+        Particle operator +(const Particle& b) const;
+        Particle operator *(const Particle& b) const;
+    };
+    
+
+    class ParticleFilter {
+        int num_particles;
+        cv::Ptr< vector<Particle> > particles;
+        int mx, my;
+        float max_std_dev;
+
+        cv::Point2f mean;
+        float stddev;
+
+
+        boost::mt19937 rng;
+        boost::normal_distribution<float> norm_dist;
+        boost::variate_generator< boost::mt19937&, boost::normal_distribution<float> > error_prop;
+
+        Particle& searchByRank(const float rank);
+
+        
+    public:
+
+        ParticleFilter(const int _particles = 1024, const int _mx = 640, const int _my = 480, const float _max_std_dev = 10.);
+
+        void update(vector<cv::DMatch>& matches, vector<cv::KeyPoint> &keypoints);
+
+        int getStatus();
+
+        cv::Point2f& getPoint();
+
+        void printParticles(cv::Mat& image);
+    };
+
 };
-
-
-class ParticleFilter {
-    int num_particles;
-    cv::Ptr< vector<Particle> > particles;
-    int mx, my;
-    float max_std_dev;
-
-    cv::Point2f mean;
-    float stddev;
-
-
-    boost::mt19937 rng;
-    boost::normal_distribution<float> norm_dist;
-    boost::variate_generator< boost::mt19937&, boost::normal_distribution<float> > error_prop;
-
-    Particle& searchByRank(const float rank);
-public:
-
-    ParticleFilter(const int _particles = 1024, const int _mx = 640, const int _my = 480, const float _max_std_dev = 10.);
-
-    void update(vector<cv::DMatch>& matches, vector<cv::KeyPoint> &keypoints);
-
-    void printParticles(cv::Mat& image);
-};
-
 
 #endif	/* PARTICLEFILTER_H */
 

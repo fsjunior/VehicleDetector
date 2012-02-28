@@ -11,6 +11,7 @@
 #include <image_transport/image_transport.h>
 
 using std::vector;
+using pf::ParticleFilter;
 
 /* Classes */
 class VehicleFeatures {
@@ -50,7 +51,9 @@ public:
 
     ~VehicleDetector();
 
-    void drawKeyPoints(cv::Mat& image, vector<cv::DMatch>& matches, vector<cv::KeyPoint> &keypoints, const cv::Scalar& color, int thickness);
+    void drawKeyPoints(cv::Mat& image, vector<cv::DMatch>& matches, vector<cv::KeyPoint> &keyPoints, const cv::Scalar& color, int thickness);
+
+    cv::Point2f getVehicleCentralPoint(vector<cv::DMatch>& matches, vector<cv::KeyPoint> &sceneKeyPoints);
 
     void imageCb(const sensor_msgs::ImageConstPtr& msg);
 
