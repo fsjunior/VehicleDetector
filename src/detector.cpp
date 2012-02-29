@@ -59,10 +59,10 @@ void VehicleFeatures::findPairs(cv::Mat& sceneDescriptors, vector<cv::DMatch>& p
 
     for (vector<cv::DMatch>::iterator i = matches.begin(); i != matches.end(); i++) {
         rank[i->queryIdx] = sigmoid(rank[i->queryIdx] + -(i->distance - mid_dist)*2.0);
-        if (rank[i->queryIdx] >= 0.0)
+        //if (rank[i->queryIdx] >= 0.0)
             pairs.push_back(*i);
-        else
-            negpairs.push_back(*i);
+        //else
+        //    negpairs.push_back(*i);
     }
 }
 
@@ -107,12 +107,14 @@ cv::Point2f VehicleDetector::getVehicleCentralPoint(vector<cv::DMatch>& matches,
     vector<cv::Point2f> src, dst;
     vector<cv::Point2f> srcpt, dstpt;
 
+    
+
     for (vector<cv::DMatch>::iterator i = matches.begin(); i != matches.end(); i++) {
         src.push_back(referenceCar.keyPoints[i->queryIdx].pt);
         dst.push_back(sceneKeyPoints[i->trainIdx].pt);
     }
 
-    cv::Mat h = cv::findHomography(src, dst, cv::RANSAC);
+    cv::Mat h = cv::findHomography(src, dst, cv::LMEDS);
 
     srcpt.push_back(cv::Point2f(96, 42.));
 
@@ -145,20 +147,15 @@ void VehicleDetector::imageCb(const sensor_msgs::ImageConstPtr& msg)
     extractor->compute(cv_ptr->image, sceneKeypoints, sceneDescriptors);
 
     referenceCar.findPairs(sceneDescriptors, pairs, negpairs);
-    try {
-        cv::Point2f p = getVehicleCentralPoint(pairs, sceneKeypoints);
-        ROS_INFO("%f %f", p.x, p.y);
-        cv::circle(cv_ptr->image, p, 2, cv::Scalar(0, 255, 255), 3);
-    } catch (cv::Exception e) {
-        //ROS_ERROR_STREAM(e.err);
-    }
+    //if(pairs.size() >= 4)
+    //    cv::circle(cv_ptr->image, getVehicleCentralPoint(pairs, sceneKeypoints), 2, cv::Scalar(0, 255, 255), 3);
 
     drawKeyPoints(cv_ptr->image, pairs, sceneKeypoints, cv::Scalar(0, 255, 0), 2);
-    drawKeyPoints(cv_ptr->image, negpairs, sceneKeypoints, cv::Scalar(0, 0, 255), 1);
+    //drawKeyPoints(cv_ptr->image, negpairs, sceneKeypoints, cv::Scalar(0, 0, 255), 1);
 
-    //pf.update(pairs, sceneKeypoints);
+    pf.update(pairs, sceneKeypoints);
 
-    //pf.printParticles(cv_ptr->image);
+    pf.printParticles(cv_ptr->image);
 
     cv::imshow(WINDOW, cv_ptr->image);
 
