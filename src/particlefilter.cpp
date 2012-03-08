@@ -18,13 +18,13 @@ Particle::Particle(const Particle &p)
     acc_rank = p.acc_rank;
 }
 
-void Particle::addXY(const float _x, const float _y)
+void Particle::stepSampleMotionModel(const float _x, const float _y)
 {
     pt.x += _x;
     pt.y += _y;
 }
 
-void Particle::calcRank(vector<cv::DMatch>& matches, vector<cv::KeyPoint> &keypoints, vector<Particle>::iterator prev)
+void Particle::stepMeasurementModel(vector<cv::DMatch>& matches, vector<cv::KeyPoint> &keypoints, vector<Particle>::iterator prev)
 {
     vector<cv::KeyPoint>::iterator k;
     float min_dist;
@@ -33,7 +33,7 @@ void Particle::calcRank(vector<cv::DMatch>& matches, vector<cv::KeyPoint> &keypo
 
     min_dist = cv::norm(k->pt - pt);
 
-    for (vector<cv::DMatch>::iterator i = matches.begin(); i != matches.end(); i++) {
+    for(vector<cv::DMatch>::iterator i = matches.begin(); i != matches.end(); i++) {
         k = keypoints.begin() + i->trainIdx;
 
         float dist = cv::norm(k->pt - pt);
@@ -79,7 +79,7 @@ error_prop(rng, norm_dist)
 
     particles = new vector<Particle>;
 
-    for (int i = 0; i < _particles; i++)
+    for(int i = 0; i < _particles; i++)
         particles->push_back(Particle(genx(), geny()));
 }
 
@@ -87,9 +87,9 @@ void ParticleFilter::update(vector<cv::DMatch>& matches, vector<cv::KeyPoint> &k
 {
     cv::Ptr< vector<Particle> > new_particles;
 
-    for (vector<Particle>::iterator i = particles->begin(); i != particles->end(); i++) {
-        i->addXY(error_prop(), error_prop()); //sample_motion_model
-        i->calcRank(matches, keypoints, i - 1); //measurement_model
+    for(vector<Particle>::iterator i = particles->begin(); i != particles->end(); i++) {
+        i->stepSampleMotionModel(error_prop(), error_prop()); //sample_motion_model
+        i->stepMeasurementModel(matches, keypoints, i - 1); //measurement_model
     }
 
     boost::uniform_real<float> max_rank(0., (particles->end() - 1)->acc_rank);
@@ -100,7 +100,7 @@ void ParticleFilter::update(vector<cv::DMatch>& matches, vector<cv::KeyPoint> &k
 
     Particle sum(0., 0.);
 
-    for (int i = 0; i < num_particles; i++) {
+    for(int i = 0; i < num_particles; i++) {
         float rand = rank_rand();
         Particle *p = &searchByRank(rand);
 
@@ -122,9 +122,9 @@ void ParticleFilter::update(vector<cv::DMatch>& matches, vector<cv::KeyPoint> &k
 
 int ParticleFilter::getStatus()
 {
-    if (stddev < max_std_dev * 1.5)
+    if(stddev < max_std_dev * 1.5)
         return DETECTED;
-    else if (stddev > max_std_dev * 1.5 && stddev < max_std_dev * 2.)
+    else if(stddev > max_std_dev * 1.5 && stddev < max_std_dev * 2.)
         return CAUTION;
     else
         return NOT_DETECTED;
@@ -137,15 +137,18 @@ cv::Point2f& ParticleFilter::getPoint()
 
 void ParticleFilter::printParticles(cv::Mat& image)
 {
-    for (vector<Particle>::iterator i = particles->begin(); i != particles->end(); i++)
+    for(vector<Particle>::iterator i = particles->begin(); i != particles->end(); i++)
         cv::circle(image, i->pt, 1, cv::Scalar(255, 0, 0), 1);
 
     cv::Scalar color;
 
-    switch (getStatus()) {
-        case DETECTED: color = cv::Scalar(0, 255, 0); break;
-        case CAUTION: color = cv::Scalar(0, 255, 255); break;
-        case NOT_DETECTED: color = cv::Scalar(0, 0, 255); break;
+    switch(getStatus()) {
+        case DETECTED: color = cv::Scalar(0, 255, 0);
+            break;
+        case CAUTION: color = cv::Scalar(0, 255, 255);
+            break;
+        case NOT_DETECTED: color = cv::Scalar(0, 0, 255);
+            break;
     }
 
     cv::circle(image, mean, 2, color, 2);

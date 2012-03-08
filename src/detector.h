@@ -21,6 +21,7 @@ public:
     vector<cv::KeyPoint> keyPoints;
     cv::Mat descriptors;
     vector< float > rank;
+    //cv::
     cv::FlannBasedMatcher matcher;
 
     VehicleFeatures();
@@ -30,6 +31,7 @@ public:
 };
 
 class VehicleDetector {
+    cv::Mat referenceCarImage;
     ros::NodeHandle nh_;
     image_transport::ImageTransport it_;
     image_transport::Subscriber image_sub_;
@@ -45,8 +47,6 @@ class VehicleDetector {
     ParticleFilter pf;
 
 public:
-
-
     VehicleDetector();
 
     ~VehicleDetector();
@@ -54,6 +54,8 @@ public:
     void drawKeyPoints(cv::Mat& image, vector<cv::DMatch>& matches, vector<cv::KeyPoint> &keyPoints, const cv::Scalar& color, int thickness);
 
     cv::Point2f getVehicleCentralPoint(vector<cv::DMatch>& matches, vector<cv::KeyPoint> &sceneKeyPoints);
+
+
 
     void imageCb(const sensor_msgs::ImageConstPtr& msg);
 

@@ -30,9 +30,9 @@ namespace pf {
         Particle(const float _x = 0., const float _y = 0.);
         Particle(const Particle &p);
 
-        void addXY(const float _x, const float _y);
+        void stepSampleMotionModel(const float _x, const float _y);
 
-        void calcRank(vector<cv::DMatch>& matches, vector<cv::KeyPoint> &keypoints, vector<Particle>::iterator prev);
+        void stepMeasurementModel(vector<cv::DMatch>& matches, vector<cv::KeyPoint> &keypoints, vector<Particle>::iterator prev);
 
         bool operator<(const float b_acc_rank) const;
 
