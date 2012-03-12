@@ -59,7 +59,7 @@ Particle Particle::operator *(const Particle& b) const
     return Particle(pt.x * b.pt.x, pt.y * b.pt.y);
 }
 
-/*Particle Filter */
+/*ParticleFilter */
 Particle& ParticleFilter::searchByRank(const float rank)
 {
     return *std::lower_bound(particles->begin(), particles->end(), rank);
@@ -128,6 +128,11 @@ int ParticleFilter::getStatus()
         return CAUTION;
     else
         return NOT_DETECTED;
+}
+
+float ParticleFilter::getStdDev()
+{
+    return stddev;
 }
 
 cv::Point2f& ParticleFilter::getPoint()

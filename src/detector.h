@@ -9,11 +9,42 @@
 #define	DETECTOR_H
 #include "particlefilter.h"
 #include <image_transport/image_transport.h>
+#include <boost/random.hpp>
+#include <fstream>
+
 
 using std::vector;
 using pf::ParticleFilter;
 
 /* Classes */
+class VehicleDetector;
+
+class DataLogger {
+    boost::mt19937 rng;
+    boost::uniform_int<> maxRand;
+    //boost::variate_generator< boost::mt19937&, boost::uniform_int<> > genRand;
+
+
+    std::ofstream dataLog;
+public:
+    int status;
+
+    bool homographyDetected;
+    bool homographyComputed;
+    cv::Point2f homographyCenter;
+
+    bool particleFilterDetected;
+    cv::Point2f particleFilterCenter;
+    float particleFilterStdDev;
+
+    
+    boost::variate_generator< boost::mt19937&, boost::uniform_int<> > genRand;
+
+    DataLogger(const std::string &filename_);
+    ~DataLogger();
+    void saveData();
+};
+
 class VehicleFeatures {
 private:
     float mid_dist;
@@ -46,6 +77,10 @@ class VehicleDetector {
 
     ParticleFilter pf;
 
+    DataLogger dl;
+
+    
+
 public:
     VehicleDetector();
 
@@ -63,6 +98,9 @@ public:
 
     float getFPS();
 };
+
+
+
 
 
 #endif	/* DETECTOR_H */

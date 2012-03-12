@@ -65,6 +65,7 @@ namespace pf {
         void update(vector<cv::DMatch>& matches, vector<cv::KeyPoint> &keypoints);
 
         int getStatus();
+        float getStdDev();
 
         cv::Point2f& getPoint();
 
