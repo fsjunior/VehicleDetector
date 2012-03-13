@@ -142,8 +142,8 @@ cv::Point2f& ParticleFilter::getPoint()
 
 void ParticleFilter::printParticles(cv::Mat& image)
 {
-    for(vector<Particle>::iterator i = particles->begin(); i != particles->end(); i++)
-        cv::circle(image, i->pt, 1, cv::Scalar(255, 0, 0), 1);
+    //for(vector<Particle>::iterator i = particles->begin(); i != particles->end(); i++)
+    //    cv::circle(image, i->pt, 1, cv::Scalar(255, 0, 0), 1);
 
     cv::Scalar color;
 
@@ -159,11 +159,11 @@ void ParticleFilter::printParticles(cv::Mat& image)
     cv::circle(image, mean, 2, color, 2);
     cv::circle(image, mean, stddev, color, 1);
 
-    std::ostringstream s;
-    s << stddev;
-    cv::Point2f p(mean);
-    p.x += stddev;
+    //std::ostringstream s;
+    //s << stddev;
+    //cv::Point2f p(mean);
+    //p.x += stddev;
 
-    cv::putText(image, s.str(), p, cv::FONT_HERSHEY_PLAIN, 1, color, 1, 8, false);
+    //cv::putText(image, s.str(), p, cv::FONT_HERSHEY_PLAIN, 1, color, 1, 8, false);
 }
 

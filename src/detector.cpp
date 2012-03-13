@@ -35,19 +35,20 @@ void mouseCallBack(int event, int x, int y, int flags, void* param)
 {
     DataLogger *dl = reinterpret_cast<DataLogger *>(param);
     
-    if(cv::EVENT_LBUTTONDOWN || cv::EVENT_RBUTTONDOWN)
+    if(event == cv::EVENT_LBUTTONDOWN || event == cv::EVENT_RBUTTONDOWN)
         switch(dl->status) {
             case HOMOGRAPHY_PHASE:
+                dl->homographyDetected = event == cv::EVENT_LBUTTONDOWN;
 
                 dl->status = PARTICLE_PHASE;
                 break;
             case PARTICLE_PHASE:
+                dl->particleFilterDetected = event == cv::EVENT_LBUTTONDOWN;
 
                 dl->status = END;
                 break;
         };
 }
-
 
 /* DataLogger */
 DataLogger::DataLogger(const std::string &filename_)
@@ -70,18 +71,17 @@ void DataLogger::saveData()
     static int id = 1;
     //ID Homography_Computed Homographt_Detected Homography_X Homography_Y ParticleFilter_Detected ParticleFilter_X ParticleFilter_Y ParticleFilter_StdDev
 
-    dataLog << id << " "
+    dataLog << id << '\t'
 
-            << homographyComputed << " "
-            << homographyDetected << " "
-            << homographyCenter.x << " "
-            << homographyCenter.y << " "
+            << homographyComputed << '\t'
+            << homographyDetected << '\t'
+            << homographyCenter.x << '\t'
+            << homographyCenter.y << '\t'
 
-            << particleFilterDetected << " "
-            << particleFilterCenter.x << " "
-            << particleFilterCenter.y << " "
+            << particleFilterDetected << '\t'
+            << particleFilterCenter.x << '\t'
+            << particleFilterCenter.y << '\t'
             << particleFilterStdDev << std::endl;
-
     
     id++;
 }
@@ -219,10 +219,9 @@ void VehicleDetector::imageCb(const sensor_msgs::ImageConstPtr& msg)
         extractor->compute(cv_ptr->image, sceneKeypoints, sceneDescriptors);
 
         referenceCar.findPairs(sceneDescriptors, pairs, negpairs);
-        if(pairs.size() >= 4)
-            cv::circle(cv_ptr->image, homographyCenter = getVehicleCentralPoint(pairs, sceneKeypoints), 2, cv::Scalar(0, 255, 255), 3);
+        
 
-        drawKeyPoints(cv_ptr->image, pairs, sceneKeypoints, cv::Scalar(0, 255, 0), 2);
+        //drawKeyPoints(cv_ptr->image, pairs, sceneKeypoints, cv::Scalar(0, 255, 0), 2);
         //drawKeyPoints(cv_ptr->image, negpairs, sceneKeypoints, cv::Scalar(0, 0, 255), 1);
 
 
@@ -231,6 +230,9 @@ void VehicleDetector::imageCb(const sensor_msgs::ImageConstPtr& msg)
         pf.update(pairs, sceneKeypoints);
 
         pf.printParticles(cv_ptr->image);
+        
+        if(pairs.size() >= 4)
+            cv::circle(cv_ptr->image, homographyCenter = getVehicleCentralPoint(pairs, sceneKeypoints), 2, cv::Scalar(0, 255, 255), 3);
 
     }
 
@@ -243,7 +245,7 @@ void VehicleDetector::imageCb(const sensor_msgs::ImageConstPtr& msg)
 
     tt = tt + (cv::getTickCount() - tl);
 
-    if(dl.genRand() < 100) {
+    if(dl.genRand() < 5) {
         dl.homographyComputed = pairs.size() >= 4;
         dl.homographyCenter = homographyCenter;
 
